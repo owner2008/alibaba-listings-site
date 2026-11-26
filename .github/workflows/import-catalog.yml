@@ -1,0 +1,27 @@
+name: Import verified catalog
+on:
+  push:
+    branches: [main]
+    paths: ['catalog.zip.part006']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and import catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat catalog.zip.part00{0..6} > "$RUNNER_TEMP/catalog.zip"
+          echo "e96b59807fbc5ada8f194bd7d6bb833f3b6a546c8e439169c5d08e359606d6bd  $RUNNER_TEMP/catalog.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/catalog.zip"
+          (cd docs/alibaba-labels/competitor-research && sha256sum --quiet -c SHA256SUMS)
+          git add docs
+          git rm catalog.zip.part00{0..6}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Import verified Alibaba catalog and product pages"
+          git push origin HEAD:main
